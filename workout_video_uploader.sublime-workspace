@@ -387,6 +387,15 @@
 	},
 	"buffers":
 	[
+		{
+			"file": "workout_upload.py",
+			"settings":
+			{
+				"buffer_size": 5296,
+				"line_ending": "Windows",
+				"name": "upload.py"
+			}
+		}
 	],
 	"build_system": "",
 	"command_palette":
@@ -638,6 +647,8 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"exc_info",
+			"None",
 			"U_NO_DEFAULT_INCLUDE_UTF_HEADERS",
 			"#ifndef",
 			"includes",
@@ -763,9 +774,7 @@
 			"doSearchHandler",
 			"doSearch",
 			"setStatus",
-			"g_numberPages",
-			"g_curPage",
-			"getSearchSuccessHandler"
+			"g_numberPages"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -856,8 +865,38 @@
 	"groups":
 	[
 		{
+			"selected": 0,
 			"sheets":
 			[
+				{
+					"buffer": 0,
+					"file": "workout_upload.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5296,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								297,
+								643
+							]
+						],
+						"settings":
+						{
+							"auto_name": "upload.py",
+							"syntax": "Packages/Python/Python.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
 			]
 		}
 	],
