@@ -10,6 +10,7 @@ from os import path
 import time
 import sys
 from functools import partial
+from youtube import Youtube
 
 VALID_EXERCISES = [
     'squat',
@@ -225,6 +226,7 @@ def while_excepting(callback):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Workout video upload application.')
     parser.add_argument('directory', default='.', help='Directory to operate upon (videos should be located here).')
+    parser.add_argument('--client-secrets', default='client_secrets.json', help='Client secrets file. See https://developers.google.com/api-client-library/python/guide/aaa_client_secrets')
     args = parser.parse_args()
 
     # Initialize operations object
@@ -317,7 +319,8 @@ if __name__ == '__main__':
         elif choice == 'upload':
             done = True
             print('Uploading...')
-            pass
+            with Youtube(args.client_secrets) as youtube:
+                print('sup')
         else:
             print('Unknown choice "%s".' % choice)
 
