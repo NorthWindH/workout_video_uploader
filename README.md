@@ -1,4 +1,4 @@
-workout_video_uploader
+Workout Video Uploader
 ======================
 
 A youtube uploader for workout videos.
