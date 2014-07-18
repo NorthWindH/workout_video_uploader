@@ -50,10 +50,11 @@ class Youtube(object):
 
         self.client_secrets_path = client_secrets_path
         self.temp_path = None
+        self.service = None
 
     def __enter__(self):
         # Ensure that we have not re-entered
-        if self.temp_path != None:
+        if self.temp_path != None or self.service != None:
             raise Exception('Cannot use multiple nested with blocks on same Youtube object!')
 
         flow = flow_from_clientsecrets(
@@ -80,10 +81,15 @@ class Youtube(object):
 
     def __exit__(self, type, value, traceback):
         # Ensure that we have not become corrupt
-        if not self.temp_path:
+        if not self.temp_path or not self.service:
             raise Exception('Exiting with block without a temp_path!')
         os.unlink(self.temp_path)
         self.temp_path = None
+        self.service = None
+
+    def _require_engaged(self):
+        if not self.service:
+            raise Exception('Youtube object cannot be used outside of "with" block')
 
     def videos_insert(self,
         video_file_path,
@@ -98,12 +104,14 @@ class Youtube(object):
 
         '''
 
+        self._require_engaged()
+
         body=dict(
             snippet=dict(
                 title=title,
                 description=description,
                 tags=tags,
-                categoryId=category
+                categoryId=categoryId
             ),
             status=dict(
                 privacyStatus=privacyStatus
@@ -111,7 +119,7 @@ class Youtube(object):
         )
 
         # Call the API's videos.insert method to create and upload the video.
-        insert_request = youtube.videos().insert(
+        insert_request = self.service.videos().insert(
             part=",".join(body.keys()),
             body=body,
             media_body=MediaFileUpload(video_file_path, chunksize=-1, resumable=True)

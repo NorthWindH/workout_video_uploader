@@ -24,9 +24,11 @@ class Entry(object):
     def __init__(self,
             video_file=None,
             exercise=None,
-            set_=None,
+            set=None,
             reps=None,
-            weight=None
+            weight=None,
+            day_num=None,
+            day_date=None
         ):
         self.video_file = video_file
 
@@ -34,9 +36,9 @@ class Entry(object):
             raise ValueError('Invalid exercise %s' % exercise)
         self.exercise = exercise
 
-        if set_ != None and set_ != 'warmup' and type(set_) != int:
-            raise ValueError('Invalid set %s' % str(set_))
-        self.set = set_
+        if set != None and set != 'warmup' and type(set) != int:
+            raise ValueError('Invalid set %s' % str(set))
+        self.set = set
 
         if reps != None and (type(reps) != int or reps <= 0):
             raise ValueError('Invalid reps %s' % str(reps))
@@ -45,6 +47,28 @@ class Entry(object):
         if weight != None and (type(weight) != int or weight <= 0):
             raise ValueError('Invalid weight %s' % str(weight))
         self.weight = weight
+
+        if day_num != None and (type(day_num) != int or day_num < 0):
+            raise ValueError('Invalid day_num %s' % str(day_num))
+        self.day_num = day_num
+
+        if day_date != None and (type(day_date) != str or not day_date):
+            raise ValueError('Invalid day_date %s' % str(day_date))
+        self.day_date = day_date
+
+    def __str__(self):
+        if self.set == 'warmup':
+            return 'day %d %s warmup %s' % (
+                self.day_num, self.exercise, self.day_date
+            )
+        else:
+            return 'day %d %s set %d %dx%d %s' % (
+                self.day_num, self.exercise, self.set, self.reps, self.weight,
+                self.day_date
+            )
+
+    def __repr__(self):
+        return str(self)
 
     def get_tags(self):
         tags = list()
@@ -92,6 +116,9 @@ class UploadState(object):
             if entry.exercise != None and entry.exercise not in exercises:
                 exercises.append(entry.exercise)
         return exercises
+
+    def get_entries(self):
+        return self.entries
 
     def get_videos(self):
         'Return a list of the video files currently registered.'
@@ -223,6 +250,10 @@ def while_excepting(callback):
         except:
             print get_exc_msg()
 
+def next_video(video_list):
+    if video_list:
+        print('Next file: %s' % path.basename(video_list[0]))
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Workout video upload application.')
     parser.add_argument('directory', default='.', help='Directory to operate upon (videos should be located here).')
@@ -263,7 +294,7 @@ if __name__ == '__main__':
         print('Videos remaining: %d' % len(videos_remaining))
 
         print('What would you like to do?')
-        choices = ['reset day date, session number', 'upload']
+        choices = ['upload to youtube']
         if videos_remaining:
             choices.insert(0, 'add exercise')
         choice = while_excepting(partial(read_menu, choices))
@@ -277,14 +308,19 @@ if __name__ == '__main__':
             exercise_choices = [e for e in VALID_EXERCISES if e not in exercises]
             exercise = while_excepting(partial(read_menu, exercise_choices))
 
+            next_video(videos_remaining)
             print('Warmup?')
             if while_excepting(read_bool):
-                state.add_entry(Entry(
-                    videos_remaining[0],
-                    exercise,
-                    'warmup'
-                ))
+                entry = Entry(
+                    video_file=videos_remaining[0],
+                    exercise=exercise,
+                    set='warmup',
+                    day_num=state.day_num,
+                    day_date=state.day_date
+                )
+                state.add_entry(entry)
                 videos_remaining.pop(0)
+                print('Added "%s"' % str(entry))
 
             if videos_remaining:
                 print('Weight?')
@@ -297,30 +333,45 @@ if __name__ == '__main__':
                     min_=1, default=6))
 
                 for idx in range(sets):
+                    next_video(videos_remaining)
                     print('Set %d reps? default: %d' % (idx + 1, reps))
                     set_reps = while_excepting(partial(read_integer, min_=1, default=reps))
                     print('Set %d weight? default: %d' % (idx + 1, weight))
                     set_weight = while_excepting(partial(read_integer, min_=1, default=weight))
-                    state.add_entry(Entry(
+                    entry = Entry(
                         videos_remaining[0],
                         exercise,
                         idx + 1,
                         set_reps,
-                        set_weight
-                    ))
-                    videos_remaining.pop(0)
-                    print('Added "day %d %s set %d %dx%d %s"' % (
-                        state.day_num, exercise, idx + 1, set_reps, set_weight,
+                        set_weight,
+                        state.day_num,
                         state.day_date
-                    ))
+                    )
+                    state.add_entry(entry)
+                    videos_remaining.pop(0)
+                    print('Added "%s"' % str(entry))
 
-        elif choice == 'reset day date, session number':
-            state.set_day(None, None)
-        elif choice == 'upload':
+        elif choice == 'upload to youtube':
             done = True
             print('Uploading...')
             with Youtube(args.client_secrets) as youtube:
-                print('sup')
+                responses = list()
+                for entry in state.entries:
+                    print 'Processing "%s"' % str(entry)
+                    responses.append(youtube.videos_insert(
+                        entry.video_file,
+                        str(entry),
+                        entry.get_tags()
+                    ))
+
+            print('Delete files?')
+            delete_files = while_excepting(read_bool)
+
+            if delete_files:
+                for entry in state.entries:
+                    print('Deleting %s' % entry.video_file)
+                    os.unlink(entry.video_file)
+            print('Files deleted.')
         else:
             print('Unknown choice "%s".' % choice)
 
